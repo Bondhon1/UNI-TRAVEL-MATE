@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h2>Give Feedback for Ride</h2>
+    <p><strong>From:</strong> {{ ride.from_location }}</p>
+    <p><strong>To:</strong> {{ ride.to_location }}</p>
+    <p><strong>Travel Date:</strong> {{ ride.travel_date.strftime('%d %B, %Y') }}</p>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="comment">Feedback</label>
+            <textarea name="comment" id="comment" class="form-control" required rows="5"></textarea>
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="rating">Rating (1 to 5)</label>
+            <select name="rating" id="rating" class="form-control">
+                <option value="">Select a Rating</option>
+                {% for r in range(1,6) %}
+                <option value="{{ r }}">{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-4">Submit Feedback</button>
+    </form>
+</div>
+{% endblock %}

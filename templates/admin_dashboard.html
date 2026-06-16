@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h3 class="text-center mb-4">Admin Dashboard</h3>
+
+    <!-- Stats -->
+    <div class="row text-center mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light p-3 shadow rounded">
+                <h5>Total Users</h5>
+                <p class="h4">{{ user_count }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light p-3 shadow rounded">
+                <h5>Total Rides</h5>
+                <p class="h4">{{ ride_count }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light p-3 shadow rounded">
+                <h5>Deleted Rides</h5>
+                <p class="h4">{{ deleted_ride_count }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light p-3 shadow rounded">
+                <h5>Total feedback</h5>
+                <p class="h4">{{ feedback_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin controls -->
+    <div class="mb-4 text-center">
+        <a href="{{ url_for('view_users') }}" class="btn btn-primary m-2">Manage Users</a>
+        <a href="{{ url_for('add_admin') }}" class="btn btn-success m-2">Add Admin</a>
+        <a href="{{ url_for('remove_admin') }}" class="btn btn-danger m-2">Remove Admin</a>
+    </div>
+
+    <!-- All Ride Posts -->
+    <h4 class="mb-3">All Ride Posts</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Creator</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Fare</th>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <td>Gender Preference</td>
+                    <th>Requests</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ride in rides %}
+                <tr>
+                    <td>{{ ride.id }}</td>
+                    <td>{{ ride.creator.name }}</td>
+                    <td>{{ ride.from_location }}</td>
+                    <td>{{ ride.to_location }}</td>
+                    <td>{{ ride.travel_date }}</td>
+                    <td>{{ ride.travel_time }}</td>
+                    <td>{{ ride.estimated_cost }}</td>
+                    <td>{{ ride.fare_type }}</td>
+                    
+                    <td>{{ ride.description }}</td>
+                    <td>{{ ride.gender_preference }}</td>
+                    <td>
+                        {% if ride.ride_requests %}
+                            <ul class="list-unstyled">
+                                {% for req in ride.ride_requests %}
+                                    <li><strong>{{ req.user.name }}</strong> - <span class="text-muted">{{ req.status }}</span></li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="text-muted">No requests</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_delete_ride', ride_id=ride.id) }}">
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            
+        </table>
+    </div>
+</div>
+{% endblock %}

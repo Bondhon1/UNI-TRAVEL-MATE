@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Edit Ride{% endblock %}
+{% block content %}
+<div class="card shadow p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h3 class="mb-3">Edit Ride & Fare-Sharing Post</h3>
+    <form method="POST">
+        <div class="row mb-3">
+            <div class="col">
+                <label for="from_location" class="form-label">From</label>
+                <input type="text" class="form-control" name="from_location" id="from_location" required readonly value="{{ ride.from_location }}">
+            </div>
+            <div class="col">
+                <label for="to_location" class="form-label">To</label>
+                <input type="text" class="form-control" name="to_location" id="to_location" required readonly value="{{ ride.to_location }}">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <label class="form-label">Pickup Location (From)</label>
+                <div id="from_map" style="height: 300px; border: 1px solid #ccc; border-radius: 10px;"></div>
+                <input type="hidden" name="from_lat" id="from_lat" value="{{ ride.from_lat }}">
+                <input type="hidden" name="from_lng" id="from_lng" value="{{ ride.from_lng }}">
+            </div>
+            <div class="col-md-6 mb-4">
+                <label class="form-label">Destination Location (To)</label>
+                <div id="to_map" style="height: 300px; border: 1px solid #ccc; border-radius: 10px;"></div>
+                <input type="hidden" name="to_lat" id="to_lat" value="{{ ride.to_lat }}">
+                <input type="hidden" name="to_lng" id="to_lng" value="{{ ride.to_lng }}">
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <label for="travel_date" class="form-label">Date</label>
+                <input type="date" class="form-control" name="travel_date" value="{{ ride.travel_date }}">
+            </div>
+            <div class="col">
+                <label for="travel_time" class="form-label">Time</label>
+                <input type="time" class="form-control" name="travel_time" value="{{ ride.travel_time }}">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="seats_available" class="form-label">Seats Available</label>
+            <input type="number" class="form-control" name="seats_available" value="{{ ride.seats_available }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="fare_type" class="form-label">Type</label>
+            <select class="form-select" name="fare_type" required>
+                <option value="fare-sharing" {% if ride.fare_type == 'fare-sharing' %}selected{% endif %}>Looking to share fare</option>
+                <option value="free" {% if ride.fare_type == 'free' %}selected{% endif %}>Free Ride</option>
+                <option value="safety" {% if ride.fare_type == 'safety' %}selected{% endif %}>Companion for Safety</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="estimated_cost" class="form-label">Estimated Cost (Optional)</label>
+            <input type="number" step="0.01" class="form-control" name="estimated_cost" value="{{ ride.estimated_cost or '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Additional Info</label>
+            <textarea class="form-control" name="description" rows="3">{{ ride.description }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="gender_preference" class="form-label">Preferred Passenger Gender</label>
+            <select class="form-select" name="gender_preference">
+                <option value="any" {% if ride.gender_preference == 'any' %}selected{% endif %}>Any</option>
+                <option value="female_only" {% if ride.gender_preference == 'female_only' %}selected{% endif %}>Female Only</option>
+                <option value="male_only" {% if ride.gender_preference == 'male_only' %}selected{% endif %}>Male Only</option>
+            </select>
+        </div>
+
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="require_verification" id="require_verification" value="1" {% if ride.require_verification %}checked{% endif %}>
+            <label class="form-check-label" for="require_verification">
+                Require verified passengers only
+            </label>
+        </div>
+
+        <button class="btn btn-primary">Update Ride</button>
+    </form>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    async function reverseGeocode(lat, lng) {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+        try {
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'yourappname/1.0' }
+            });
+            return await response.json();
+        } catch (err) {
+            console.error("Reverse geocoding failed", err);
+            return null;
+        }
+    }
+
+    function initMap(mapId, latInputId, lngInputId, addressInputId, initialLat, initialLng) {
+        const map = L.map(mapId).setView([initialLat, initialLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = L.marker([initialLat, initialLng]).addTo(map);
+
+        map.on('click', async function (e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            document.getElementById(latInputId).value = lat;
+            document.getElementById(lngInputId).value = lng;
+
+            marker.setLatLng(e.latlng);
+
+            const address = await reverseGeocode(lat, lng);
+            if (address && address.address) {
+                let shortAddress = "";
+                if (address.address.road) shortAddress = address.address.road;
+                else if (address.address.neighbourhood) shortAddress = address.address.neighbourhood;
+                else if (address.address.suburb) shortAddress = address.address.suburb;
+                else shortAddress = address.display_name.split(",")[0];
+
+                document.getElementById(addressInputId).value = shortAddress;
+            } else {
+                document.getElementById(addressInputId).value = "Address not found";
+            }
+        });
+    }
+
+    const fromLat = parseFloat(document.getElementById('from_lat').value) || 23.8103;
+    const fromLng = parseFloat(document.getElementById('from_lng').value) || 90.4125;
+    const toLat = parseFloat(document.getElementById('to_lat').value) || 23.8103;
+    const toLng = parseFloat(document.getElementById('to_lng').value) || 90.4125;
+
+    initMap("from_map", "from_lat", "from_lng", "from_location", fromLat, fromLng);
+    initMap("to_map", "to_lat", "to_lng", "to_location", toLat, toLng);
+
+});
+</script>
+{% endblock %}
+{% endblock %}

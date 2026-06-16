@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Ride Deleted Info{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <div class="card shadow rounded-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Ride Deleted Information</h4>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-4">This ride was deleted by an administrator. Below are the details as they were recorded before deletion.</p>
+
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Ride ID:</strong> #{{ ride.original_ride_id }}</li>
+                <li class="list-group-item"><strong>Deleted At:</strong> {{ ride.deleted_at.strftime('%B %d, %Y at %I:%M %p') }}</li>
+                <li class="list-group-item"><strong>Origin:</strong> {{ ride.origin }}</li>
+                <li class="list-group-item"><strong>Destination:</strong> {{ ride.destination }}</li>
+                <li class="list-group-item"><strong>Travel Date:</strong> {{ ride.travel_date.strftime('%B %d, %Y') }}</li>
+                <li class="list-group-item"><strong>Travel Time:</strong> {{ ride.travel_time.strftime('%I:%M %p') }}</li>
+                <li class="list-group-item"><strong>Fare:</strong> {{ ride.fare if ride.fare else 'Free' }}</li>
+                <li class="list-group-item"><strong>Available Seats:</strong> {{ ride.seats }}</li>
+            </ul>
+
+            <div class="mt-4 text-end">
+                <a href="{{ url_for('ride_posts') }}" class="btn btn-outline-secondary">Back to Ride Posts</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

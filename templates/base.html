@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Ride Share{% endblock %}</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Add these in your base.html or directly in the sharable_people.html file -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+
+
+    
+
+</head>
+<body>
+   
+    <nav class="navbar navbar-expand-lg navbar-light bg-white px-4">
+        <a class="navbar-brand fw-bold" href="/">RideShare</a>
+    
+        <!-- Toggler (burger button) -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+            aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    
+        <!-- Navbar links -->
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                <!-- Chat dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle position-relative" href="#" id="messageDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-chat-dots"></i>
+                        {% if unread_chats_count %}
+                            <span class="badge bg-success rounded-circle position-absolute top-0 start-100 translate-middle">
+                                {{ unread_chats_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageDropdown" style="max-height: 300px; overflow-y: auto;">
+                        {% if recent_chats %}
+                            {% for chat in recent_chats %}
+                                <li>
+                                    <a class="dropdown-item small open-chat" 
+                                       data-chat-id="{{ chat.id }}" 
+                                       data-user-name="{{ chat.other_user.name }}">
+                                        Chat with {{ chat.other_user.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">No messages</span></li>
+                        {% endif %}
+                    </ul>
+                </li>
+    
+                <!-- Notifications dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle position-relative" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        {% if unread_notifications %}
+                            <span class="badge bg-danger rounded-circle position-absolute top-0 start-100 translate-middle">
+                                {{ unread_notifications|length }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="max-height: 300px; overflow-y: auto;">
+                        {% if unread_notifications %}
+                            {% for notif in unread_notifications %}
+                                <li>
+                                    <a class="dropdown-item small" href="{{ url_for('read_and_redirect', notif_id=notif.id) }}">
+                                        {{ notif.message }}<br>
+                                        <small class="text-muted">{{ notif.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">No new notifications</span></li>
+                        {% endif %}
+                    </ul>
+                </li>
+    
+                <!-- Other menu items -->
+                <li class="nav-item"><a class="nav-link" href="/profile">Update Profile</a></li>
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/create_ride">Post a Ride</a></li>
+                <li class="nav-item"><a class="nav-link" href="/ride_posts">View Rides</a></li>
+                <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+    
+                {% elif session.get('admin_logged_in') %}
+                <!-- Notifications dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle position-relative" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        {% if unread_notifications %}
+                            <span class="badge bg-danger rounded-circle position-absolute top-0 start-100 translate-middle">
+                                {{ unread_notifications|length }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="max-height: 300px; overflow-y: auto;">
+                        {% if unread_notifications %}
+                            {% for notif in unread_notifications %}
+                                <li>
+                                    <a class="dropdown-item small" href="{{ url_for('read_and_redirect', notif_id=notif.id) }}">
+                                        {{ notif.message }}<br>
+                                        <small class="text-muted">{{ notif.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">No new notifications</span></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Admin Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin_logout">Admin Logout</a></li>
+                {% else %}
+                <li class="nav-item"><a class="nav-link" href="/login">User Login</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/login">Admin Login</a></li>
+                <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    
+
+<div class="container my-5">
+    {% block content %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="flash {{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    {% endblock %}
+</div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+<script>
+  const CURRENT_USER_NAME = {{ current_user.name | tojson if current_user.is_authenticated else 'null' }};
+
+</script>
+
+
+<script>
+    const socket = io();
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatContainer = document.getElementById('chatPopupsContainer');
+    
+        document.querySelectorAll('.open-chat').forEach(button => {
+            button.addEventListener('click', function() {
+                const chatId = this.getAttribute('data-chat-id');
+                const userName = this.getAttribute('data-user-name');
+    
+                openChat(chatId, userName);
+            });
+        });
+    });
+    
+    function openChat(chatId, userName) {
+        markChatMessagesRead(chatId);
+    
+        if (document.getElementById('chatBox-' + chatId)) {
+            document.getElementById('chatBox-' + chatId).style.display = 'block';
+            return;
+        }
+    
+        const chatContainer = document.getElementById('chatPopupsContainer');
+        const chatBox = document.createElement('div');
+        chatBox.className = 'card shadow p-2 mb-2';
+        chatBox.style.width = '300px';
+        chatBox.style.height = '400px';
+        chatBox.style.overflow = 'hidden';
+        chatBox.style.backgroundColor = 'white';
+        chatBox.style.marginBottom = '10px';
+        chatBox.id = 'chatBox-' + chatId;
+    
+        chatBox.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center border-bottom mb-2">
+                <strong>${userName}</strong>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="this.parentElement.parentElement.remove()">X</button>
+            </div>
+            <div id="chatMessages-${chatId}" style="height: 250px; overflow-y: auto; background-color: #f8f9fa; padding: 5px;" class="mb-2"></div>
+            <div class="input-group">
+                <input type="text" id="chatInput-${chatId}" class="form-control" placeholder="Type a message">
+                <button class="btn btn-primary send-btn" data-chat-id="${chatId}" type="button">Send</button>
+            </div>
+        `;
+        chatContainer.appendChild(chatBox);
+    
+        // Load old messages
+        loadChatMessages(chatId);
+    
+        // Join the socket room
+        socket.emit('join', { chat_id: chatId });
+    
+        chatBox.querySelector('.send-btn').addEventListener('click', function() {
+            sendMessage(chatId);
+        });
+    
+        chatBox.querySelector(`#chatInput-${chatId}`).addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage(chatId);
+            }
+        });
+    }
+    
+    function loadChatMessages(chatId) {
+        fetch(`/chat/${chatId}/messages`)
+            .then(response => response.json())
+            .then(data => {
+                const messageContainer = document.getElementById('chatMessages-' + chatId);
+                messageContainer.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-1';
+                    div.innerHTML = `<small><strong>${msg.sender}</strong>: ${msg.content}</small>`;
+                    messageContainer.appendChild(div);
+                });
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+            });
+    }
+    
+    function markChatMessagesRead(chatId) {
+        fetch(`/chat/${chatId}/mark_read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const messageBadge = document.querySelector('#messageDropdown .badge');
+                if (messageBadge) {
+                    let currentCount = parseInt(messageBadge.textContent.trim());
+                    if (!isNaN(currentCount) && currentCount > 0) {
+                        let newCount = currentCount - 1;
+                        if (newCount > 0) {
+                            messageBadge.textContent = newCount;
+                        } else {
+                            messageBadge.remove();
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    function sendMessage(chatId) {
+        const input = document.getElementById('chatInput-' + chatId);
+        const content = input.value.trim();
+        if (content === '') return;
+    
+        fetch(`/chat/${chatId}/send`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                
+    
+                input.value = '';
+    
+                
+            }
+        });
+    }
+    
+    // Listen for incoming messages
+    const loggedInUserName = "{{ current_user.name }}";  // Pass this from Flask template
+
+    socket.on('receive_message', function(data) {
+        const { chat_id, sender, content } = data;
+
+        const messageContainer = document.getElementById('chatMessages-' + chat_id);
+        if (!messageContainer) return;
+
+        // Show 'You' if sender matches current user
+        const displaySender = (sender === CURRENT_USER_NAME) ? 'You' : sender;
+
+        const div = document.createElement('div');
+        div.className = 'mb-1';
+        div.innerHTML = `<small><strong>${displaySender}</strong>: ${content}</small>`;
+        messageContainer.appendChild(div);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    });
+
+
+
+
+    
+    function openChatDirect(userId, userName) {
+        fetch(`/chat/start/${userId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            const chatId = data.chat_id;
+            openChat(chatId, userName);
+        });
+    }
+    
+    function markMessagesRead() {
+        fetch('/mark_messages_read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const messageBadge = document.querySelector('#messageDropdown .badge');
+                if (messageBadge) {
+                    messageBadge.remove();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error marking messages as read:', error);
+        });
+    }
+    </script>
+    
+    
+
+<!-- Chat popup will be dynamically inserted here -->
+<div id="chatPopupsContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;"></div>
+{% block scripts %}{% endblock %}
+
+</body>
+<!-- Footer -->
+<footer class="bg-dark text-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-2">Ride Share &copy; {{ now().year }} | All Rights Reserved</p>
+        <div>
+            <a href="#" class="text-light mx-2"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="text-light mx-2"><i class="bi bi-twitter"></i></a>
+            <a href="#" class="text-light mx-2"><i class="bi bi-instagram"></i></a>
+        </div>
+    </div>
+</footer>
+</html>

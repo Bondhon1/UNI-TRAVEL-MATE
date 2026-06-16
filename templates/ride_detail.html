@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h2>🚗 Ride Details</h2>
+
+    <div class="card mb-4 shadow">
+        <div class="card-body">
+            <h4>{{ ride.from_location }} ➜ {{ ride.to_location }}</h4>
+
+            <p><strong>Date:</strong> {{ ride.travel_date.strftime('%d %b %Y') }}</p>
+            <p><strong>Time:</strong> {{ ride.travel_time.strftime('%I:%M %p') }}</p>
+            <p><strong>Fare Type:</strong> {{ ride.fare_type.replace('-', ' ').title() }}</p>
+            {% if ride.estimated_cost %}
+                <p><strong>Estimated Cost:</strong> {{ ride.estimated_cost }} BDT</p>
+            {% endif %}
+            <p><strong>Seats Available:</strong> {{ ride.seats_available }}</p>
+
+            {% if ride.gender_preference != 'any' %}
+                <p><strong>Gender Preference:</strong> {{ ride.gender_preference.title() }}</p>
+            {% endif %}
+            {% if ride.require_verification %}
+                <p><strong>Verification Required:</strong> Yes</p>
+            {% endif %}
+
+            <p><strong>Description:</strong><br>{{ ride.description }}</p>
+
+            <p><strong>Posted By:</strong>
+                {{ ride.creator.name }}
+                {% if ride.creator.verified %}
+                    <span class="badge bg-success">Verified</span>
+                {% endif %}
+            </p>
+
+            <!-- 🗺️ Map Section -->
+            {% if ride.from_lat and ride.from_lng and ride.to_lat and ride.to_lng %}
+                <div id="rideMap" style="height: 400px;"></div>
+            {% else %}
+                <div class="alert alert-warning mt-3">
+                    Location data not available to show the map.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('ride_posts') }}" class="btn btn-secondary">🔙 Back</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+{% if ride.from_lat and ride.from_lng and ride.to_lat and ride.to_lng %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const map = L.map('rideMap').setView([{{ ride.from_lat }}, {{ ride.from_lng }}], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const fromMarker = L.marker([{{ ride.from_lat }}, {{ ride.from_lng }}]).addTo(map)
+            .bindPopup('<b>From:</b> {{ ride.from_location }}').openPopup();
+
+        const toMarker = L.marker([{{ ride.to_lat }}, {{ ride.to_lng }}]).addTo(map)
+            .bindPopup('<b>To:</b> {{ ride.to_location }}');
+
+        const bounds = L.latLngBounds([
+            [{{ ride.from_lat }}, {{ ride.from_lng }}],
+            [{{ ride.to_lat }}, {{ ride.to_lng }}]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+    });
+</script>
+{% endif %}
+{% endblock %}

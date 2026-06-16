@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>All Past Journeys</h2>
+
+    {% if past_rides %}
+        <div class="list-group">
+            {% for ride in past_rides %}
+            <div class="list-group-item">
+                <h5 class="mb-1">{{ ride.from_location }} → {{ ride.to_location }}</h5>
+                <small>Travelled on {{ ride.travel_date.strftime('%d %B, %Y') }}</small><br>
+                <small>Owner: 
+                    <a href="{{ url_for('view_profile', user_id=ride.creator_id) }}">
+                        {{ ride.creator.username }}
+                    </a>
+                </small>
+                <div class="mt-2">
+                    <a href="{{ url_for('give_feedback', ride_id=ride.id) }}" class="btn btn-sm btn-outline-primary">
+                        Give Feedback
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No past journeys found.</p>
+    {% endif %}
+</div>
+{% endblock %}

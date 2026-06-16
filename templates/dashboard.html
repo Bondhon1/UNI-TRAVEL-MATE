@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="card p-4 shadow" style="max-width: 900px; margin: auto; border-radius: 10px;">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if not current_user.verified %}
+    <div class="alert alert-warning">
+        Please verify your email to access all features.
+    </div>
+    {% endif %}
+
+    <!-- Profile Info -->
+    <div class="text-center mb-4">
+        {% if current_user.profile_picture %}
+            <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_picture) }}" class="rounded-circle mb-3" style="width: 120px; height: 120px;">
+        {% else %}
+            <img src="{{ url_for('static', filename='profile_pics/default.jpg') }}" class="rounded-circle mb-3" style="width: 120px; height: 120px;">
+        {% endif %}
+        <h4>{{ current_user.name }}</h4>
+        <p class="text-muted">{{ current_user.email }}</p>
+    </div>
+    <hr>
+    <div class="mb-4">
+        <p><strong>Phone:</strong> {{ current_user.phone }}</p>
+        <p><strong>Address:</strong> {{ current_user.address }}</p>
+        <p><strong>Blood Group:</strong> {{ current_user.blood_group }}</p>
+        <p><strong>NID:</strong> {{ current_user.nid }}</p>
+        <p><strong>Preferred Travel Mode:</strong> {{ current_user.preferred_mode }}</p>
+        <p><strong>Gender:</strong> {{current_user.gender }}</p>
+        <p><strong>Average Rating: </strong> {{current_user.average_rating }}</p>
+        
+    </div>
+
+    <!-- Upcoming Rides -->
+    <h3 class="mt-4">Upcoming Rides</h3>
+    {% if upcoming_rides %}
+        <ul class="list-unstyled">
+        {% for ride in upcoming_rides %}
+            <div class="card p-3 mb-3 shadow-sm">
+                <li>
+                    <strong>From:</strong> {{ ride.from_location }} <br>
+                    <strong>To:</strong> {{ ride.to_location }} <br>
+                    <strong>Date:</strong> {{ ride.travel_date.strftime('%d %B, %Y') }} <br>
+                    <strong>Owner:</strong> 
+                    <a href="{{ url_for('view_profile', user_id=ride.creator_id) }}">
+                        {{ ride.creator.name }}
+                    </a>
+                </li>
+            </div>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No upcoming rides found.</p>
+    {% endif %}
+
+    <!-- Ride Requests -->
+    <h5 class="mt-4">📩 Your Ride Requests</h5>
+    {% if ride_requests %}
+        {% for req in ride_requests %}
+            <div class="card p-3 mb-3 shadow-sm">
+                <p><strong>Ride ID:</strong> {{ req.ride_id }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="badge bg-{{ 'success' if req.status == 'accepted' else 'danger' if req.status == 'rejected' else 'secondary' }}">
+                        {{ req.status|capitalize }}
+                    </span>
+                </p>
+                <p><strong>Request Time:</strong> {{ req.request_time.strftime('%d %b %Y %I:%M %p') }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No ride requests made yet.</p>
+    {% endif %}
+
+    <!-- Past Travel History -->
+    <h5 class="mt-4">🕘 Past Rides</h5>
+
+    {% if travel_history %}
+        <ul class="list-unstyled">
+        {% for ride in travel_history %}
+            <li>
+                <div class="card p-3 mb-3 shadow-sm rounded">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>From:</strong> {{ ride.from_location }} <br>
+                            <strong>To:</strong> {{ ride.to_location }} <br>
+                            <strong>Date:</strong> {{ ride.travel_date.strftime('%d %B, %Y') }} <br>
+                            <strong>Owner:</strong> 
+                            <a href="{{ url_for('view_profile', user_id=ride.creator_id) }}" class="text-decoration-none">
+                                {{ ride.creator.name }}
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('give_feedback', ride_id=ride.id) }}" class="btn btn-sm btn-primary mt-2">
+                                Give Feedback
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <hr class="my-2">
+        {% endfor %}
+        </ul>
+        <div class="text-center mt-3">
+            <a href="{{ url_for('all_past_journeys') }}" class="btn btn-link">View All Past Journeys</a>
+        </div>
+    {% else %}
+        <p class="text-muted">No past journeys found.</p>
+    {% endif %}
+
+    <!-- Recommended Rides -->
+    <h5 class="mt-4">✨ Recommended Rides</h5>
+    {% if recommended_rides %}
+        {% for ride in recommended_rides %}
+            <div class="card p-3 mb-3 shadow-sm">
+                <p><strong>From:</strong> {{ ride.from_location }}</p>
+                <p><strong>To:</strong> {{ ride.to_location }}</p>
+                <p><strong>Date:</strong> {{ ride.travel_date.strftime('%d %b %Y') }}</p>
+                <p><strong>Time:</strong> {{ ride.travel_time.strftime('%I:%M %p') }}</p>
+                <form action="{{ url_for('request_ride', ride_id=ride.id) }}" method="post">
+                    <button type="submit" class="btn btn-outline-primary">Request to Join</button>
+                  </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No recommendations yet. Update your travel preferences!</p>
+    {% endif %}
+
+    <!-- Buttons -->
+    <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100 mt-3">Edit Profile</a>
+    <a href="{{ url_for('preferences') }}" class="btn btn-outline-secondary w-100 mt-2">Travel Preferences</a>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 mt-2">Logout</a>
+</div>
+
+{% endblock %}

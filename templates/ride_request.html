@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Ride Request Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h3 class="mb-3">📝 Ride Request Details</h3> 
+
+    <!-- Ride Info -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5><strong>{{ ride.from_location }} ➜ {{ ride.to_location }}</strong></h5>
+            <p>
+                <strong>Date:</strong> {{ ride.travel_date.strftime('%d %b %Y') }} |
+                <strong>Time:</strong> {{ ride.travel_time.strftime('%I:%M %p') }}<br>
+                <strong>Fare:</strong> {{ ride.fare_type }} 
+                {% if ride.estimated_cost %} ({{ ride.estimated_cost }} TK) {% endif %} |
+                <strong>Seats:</strong> {{ ride.seats_available }}<br>
+                {% if ride.gender_preference != 'any' %}
+                    <strong>Gender Preference:</strong> {{ ride.gender_preference.title() }}<br>
+                {% endif %}
+                {% if ride.require_verification %}
+                    <strong>Verification Required:</strong> Yes<br>
+                {% endif %}
+            </p>
+            <p><strong>Description:</strong><br>{{ ride.description }}</p>
+
+            {% if ride.from_lat and ride.from_lng and ride.to_lat and ride.to_lng %}
+                <div id="map" style="height: 300px;" class="mt-3"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Requester Info -->
+    <h5>Request From:</h5>
+    <div class="card mb-4">
+        <div class="card-body d-flex align-items-center">
+            <a href="{{ url_for('view_profile', user_id=requester.id) }}">
+                <img src="{{ url_for('static', filename='profile_pics/' ~ requester.profile_picture) }}" alt="Profile Picture"
+                    class="rounded-circle me-3" style="width: 80px; height: 80px; object-fit: cover;">
+            </a>
+            <div>
+                <h4 class="mb-0">
+                    <a href="{{ url_for('view_profile', user_id=requester.id) }}" class="text-decoration-none">
+                        {{ requester.name }}
+                    </a>
+                </h4>
+                <p class="text-muted mb-0">{{ requester.email }}</p>
+                <small>Phone: {{ requester.phone }} | Blood Group: {{ requester.blood_group }}</small><br>
+                <small>Address: {{ requester.address }}</small>
+                <small>Address: {{ requester.gender }}</small>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Action Buttons -->
+    <form method="post" action="{{ url_for('handle_ride_request', ride_id=ride.id, requester_id=requester.id) }}">
+        <button name="action" value="accept" class="btn btn-success">✅ Accept</button>
+        <button name="action" value="reject" class="btn btn-danger ms-2">❌ Reject</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if ride.from_lat and ride.from_lng and ride.to_lat and ride.to_lng %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const map = L.map('map').setView([{{ ride.from_lat }}, {{ ride.from_lng }}], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const fromMarker = L.marker([{{ ride.from_lat }}, {{ ride.from_lng }}]).addTo(map)
+        .bindPopup('<b>From:</b> {{ ride.from_location }}').openPopup();
+    const toMarker = L.marker([{{ ride.to_lat }}, {{ ride.to_lng }}]).addTo(map)
+        .bindPopup('<b>To:</b> {{ ride.to_location }}');
+
+    const bounds = L.latLngBounds([
+        [{{ ride.from_lat }}, {{ ride.from_lng }}],
+        [{{ ride.to_lat }}, {{ ride.to_lng }}]
+    ]);
+    map.fitBounds(bounds, { padding: [30, 30] });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Remove Admin{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h3>Remove Admin</h3>
+    <form method="POST">
+        <div class="mb-3">
+            <label>Select Admin</label>
+            <select name="admin_id" class="form-select" required>
+                {% for admin in admins %}
+                    <option value="{{ admin.id }}">{{ admin.email }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-danger">Remove Admin</button>
+    </form>
+</div>
+{% endblock %}
